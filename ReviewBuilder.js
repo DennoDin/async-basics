@@ -120,46 +120,60 @@ class ReviewBuilder {
     return promise;
   }
 
-  buildReviewsAsyncAwait() {
-    const promise = async () => {
-      try {
-        const productPromise = new Promise((resolve, reject) => {
-          const productsMap = {};
-          let products;
-          fs.readFile("./data/products.json", "utf-8", (error, data) => {
-            if (error) reject(error);
-            products = JSON.parse(data);
-            products.forEach((product) => {
-              productsMap[product.id] = product.name;
-            });
-            resolve(productsMap);
+  async buildReviewsAsyncAwait() {
+    try {
+      const productPromise = new Promise((resolve, reject) => {
+        const productsMap = {};
+        let products;
+        fs.readFile("./data/products.json", "utf-8", (error, data) => {
+          if (error) reject(error);
+          products = JSON.parse(data);
+          products.forEach((product) => {
+            productsMap[product.id] = product.name;
           });
+          resolve(productsMap);
         });
-        const userPromise = new Promise((resolve, reject) => {
-          let users;
-          const usersMap = {};
-          fs.readFile("./data/users.json", "utf-8", (error, data) => {
-            if (error) reject(error);
-            users = JSON.parse(data);
-            users.forEach((user) => {
-              usersMap[user.id] = user.username;
-            });
-            resolve(usersMap);
+      });
+      const userPromise = new Promise((resolve, reject) => {
+        let users;
+        const usersMap = {};
+        fs.readFile("./data/users.json", "utf-8", (error, data) => {
+          if (error) reject(error);
+          users = JSON.parse(data);
+          users.forEach((user) => {
+            usersMap[user.id] = user.username;
           });
+          resolve(usersMap);
         });
-        const reviewsPromise = new Promise((resolve, reject) => {
-          let reviews;
-          fs.readFile("./data/reviews.json", "utf-8", (error, data) => {
-            if (error) reject(error);
-            reviews = JSON.parse(data);
-            resolve(reviews);
-          });
-          // const [productsMap, usersMap, reviews] = await Promise.all()
+      });
+      const reviewsPromise = new Promise((resolve, reject) => {
+        let reviews;
+        fs.readFile("./data/reviews.json", "utf-8", (error, data) => {
+          if (error) reject(error);
+          reviews = JSON.parse(data);
+          resolve(reviews);
         });
-      } catch (err) {
-        console.log(err);
-      }
-    };
+      });
+
+      const promise = await Promise.all([
+        productPromise,
+        userPromise,
+        reviewsPromise,
+      ]).then(([productsMap, usersMap, reviews]) => {
+        return reviews.map((review) => {
+          const productObj = {
+            productName: productsMap[review.productId],
+            username: usersMap[review.userId],
+            text: review.text,
+            rating: review.rating,
+          };
+          return productObj;
+        });
+      });
+      return promise;
+    } catch (err) {
+      console.log(err);
+    }
   }
 }
 
